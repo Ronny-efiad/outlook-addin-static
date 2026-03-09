@@ -91,9 +91,11 @@ async function analyseEmail() {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        subject: _emailData.subject,
-        body:    _emailData.bodyTrimmed,
-        sender:  `${_emailData.senderName} <${_emailData.senderEmail}>`,
+        subject:     _emailData.subject,
+        body:        _emailData.bodyTrimmed,
+        sender:      `${_emailData.senderName} <${_emailData.senderEmail}>`,
+        senderEmail: _emailData.senderEmail,
+        senderName:  _emailData.senderName,
       }),
     });
 
