@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp
+  xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+  xsi:type="MailApp">
+
+  <Id>fd9faab9-1197-430a-a16f-054a062b38e1</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>efiad.ai</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+
+  <DisplayName DefaultValue="AI Email Enrichment"/>
+  <Description DefaultValue="AI-powered email analysis: summaries, categories, urgency, and actions."/>
+
+  <IconUrl DefaultValue="https://ronny-efiad.github.io/outlook-addin-static/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://ronny-efiad.github.io/outlook-addin-static/assets/icon-80.png"/>
+  <SupportUrl DefaultValue="https://ronny-efiad.github.io/outlook-addin-static/support"/>
+
+  <AppDomains>
+    <AppDomain>https://ronny-efiad.github.io</AppDomain>
+    <AppDomain>https://devious-postmedian-makai.ngrok-free.dev</AppDomain>
+  </AppDomains>
+
+  <Permissions>ReadItem</Permissions>
+
+  <Rule xsi:type="RuleCollection" Mode="Or">
+    <Rule xsi:type="ItemIs" ItemType="Message" FormType="Read"/>
+  </Rule>
+
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Requirements>
+      <bt:Sets DefaultMinVersion="1.3">
+        <bt:Set Name="Mailbox"/>
+      </bt:Sets>
+    </Requirements>
+    <Hosts>
+      <Host xsi:type="MailHost">
+        <DesktopFormFactor>
+          <FunctionFile resid="functionFile"/>
+          <ExtensionPoint xsi:type="MessageReadCommandSurface">
+            <OfficeTab id="TabDefault">
+              <Group id="msgReadGroup">
+                <Label resid="groupLabel"/>
+                <Control xsi:type="Button" id="msgReadOpenPaneButton">
+                  <Label resid="paneButtonLabel"/>
+                  <Supertip>
+                    <Title resid="paneButtonLabel"/>
+                    <Description resid="paneButtonDesc"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="icon16"/>
+                    <bt:Image size="32" resid="icon32"/>
+                    <bt:Image size="80" resid="icon80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <SourceLocation resid="taskPaneUrl"/>
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+    <Resources>
+      <bt:Images>
+        <bt:Image id="icon16" DefaultValue="https://ronny-efiad.github.io/outlook-addin-static/assets/icon-16.png"/>
+        <bt:Image id="icon32" DefaultValue="https://ronny-efiad.github.io/outlook-addin-static/assets/icon-32.png"/>
+        <bt:Image id="icon80" DefaultValue="https://ronny-efiad.github.io/outlook-addin-static/assets/icon-80.png"/>
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="functionFile" DefaultValue="https://ronny-efiad.github.io/outlook-addin-static/commands.html"/>
+        <bt:Url id="taskPaneUrl" DefaultValue="https://ronny-efiad.github.io/outlook-addin-static/taskpane.html"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="groupLabel" DefaultValue="AI Enrichment"/>
+        <bt:String id="paneButtonLabel" DefaultValue="Analyse Email"/>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="paneButtonDesc" DefaultValue="Open the AI enrichment panel to see summary, category, urgency, and suggested actions for this email."/>
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+
+</OfficeApp>
