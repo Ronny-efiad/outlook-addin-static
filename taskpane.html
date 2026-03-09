@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Email Enrichment</title>
+
+  <!-- Office.js — MUST be loaded from this CDN, no exceptions -->
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+
+  <style>
+    /* ─── DESIGN SYSTEM ──────────────────────────────────────────── */
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+    :root {
+      --bg:          #0d0f12;
+      --surface:     #161920;
+      --surface2:    #1e2229;
+      --border:      #2a2f3a;
+      --accent:      #00d4aa;
+      --accent-dim:  rgba(0, 212, 170, 0.12);
+      --warn:        #ff6b35;
+      --warn-dim:    rgba(255, 107, 53, 0.12);
+      --info:        #4d9de0;
+      --info-dim:    rgba(77, 157, 224, 0.12);
+      --text:        #e8eaf0;
+      --text-muted:  #6b7280;
+      --text-faint:  #3d4452;
+      --mono:        'IBM Plex Mono', monospace;
+      --sans:        'IBM Plex Sans', sans-serif;
+      --radius:      6px;
+      --radius-lg:   10px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 13px;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    /* ─── LAYOUT ─────────────────────────────────────────────────── */
+    .shell {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      padding: 14px;
+      gap: 12px;
+    }
+
+    /* ─── HEADER ─────────────────────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .header-icon {
+      width: 28px; height: 28px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(0,212,170,0.3);
+      border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .header-text { flex: 1; }
+    .header-title {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .header-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+    .analyse-btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: var(--radius);
+      padding: 6px 14px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      white-space: nowrap;
+    }
+    .analyse-btn:hover  { opacity: 0.85; }
+    .analyse-btn:active { transform: scale(0.97); }
+    .analyse-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ─── STATES ─────────────────────────────────────────────────── */
+    #state-idle, #state-loading, #state-error, #state-result {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+      overflow-y: auto;
+    }
+    #state-idle    { display: flex; }
+
+    .idle-prompt {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px 20px;
+      text-align: center;
+      gap: 10px;
+      display: flex; flex-direction: column; align-items: center;
+      margin-top: 8px;
+    }
+    .idle-prompt .big-icon { font-size: 32px; }
+    .idle-prompt h3 { font-size: 14px; font-weight: 500; color: var(--text); }
+    .idle-prompt p  { font-size: 12px; color: var(--text-muted); max-width: 200px; }
+
+    /* Loading skeleton */
+    #state-loading {
+      gap: 8px;
+    }
+    .loading-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .spinner {
+      width: 12px; height: 12px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .skeleton {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      position: relative;
+    }
+    .skeleton::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255,255,255,0.03) 50%,
+        transparent 100%);
+      animation: shimmer 1.4s ease-in-out infinite;
+    }
+    @keyframes shimmer {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    .skeleton-tall   { height: 80px; }
+    .skeleton-medium { height: 52px; }
+    .skeleton-short  { height: 36px; }
+
+    /* ─── RESULT CARDS ───────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      animation: fadeUp 0.3s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .card:nth-child(1) { animation-delay: 0.00s; }
+    .card:nth-child(2) { animation-delay: 0.07s; }
+    .card:nth-child(3) { animation-delay: 0.14s; }
+    .card:nth-child(4) { animation-delay: 0.21s; }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      flex: 1;
+    }
+    .card-body {
+      padding: 12px 14px;
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* ── Badge chips ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+    }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+    .badge-HIGH, .badge-CRITICAL, .badge-COMPLAINT, .badge-URGENT {
+      background: var(--warn-dim);
+      color: var(--warn);
+      border: 1px solid rgba(255,107,53,0.25);
+    }
+    .badge-HIGH .badge-dot, .badge-CRITICAL .badge-dot,
+    .badge-COMPLAINT .badge-dot, .badge-URGENT .badge-dot {
+      background: var(--warn);
+    }
+
+    .badge-MEDIUM, .badge-INQUIRY, .badge-REQUEST {
+      background: var(--info-dim);
+      color: var(--info);
+      border: 1px solid rgba(77,157,224,0.25);
+    }
+    .badge-MEDIUM .badge-dot, .badge-INQUIRY .badge-dot,
+    .badge-REQUEST .badge-dot {
+      background: var(--info);
+    }
+
+    .badge-LOW, .badge-INFO, .badge-POSITIVE, .badge-FYI {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid rgba(0,212,170,0.25);
+    }
+    .badge-LOW .badge-dot, .badge-INFO .badge-dot,
+    .badge-POSITIVE .badge-dot, .badge-FYI .badge-dot {
+      background: var(--accent);
+    }
+
+    /* chips row */
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    /* ── Action item ── */
+    .action-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-top: 1px solid var(--text-faint);
+    }
+    .action-item:first-child { border-top: none; padding-top: 0; }
+    .action-num {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--accent);
+      background: var(--accent-dim);
+      border-radius: 4px;
+      padding: 2px 6px;
+      margin-top: 1px;
+      flex-shrink: 0;
+    }
+    .action-text { font-size: 12.5px; color: var(--text); line-height: 1.5; }
+
+    /* ── Tone bar ── */
+    .tone-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .tone-label { font-size: 12px; color: var(--text-muted); min-width: 70px; }
+    .tone-bar-track {
+      flex: 1; height: 6px;
+      background: var(--surface2);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .tone-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.6s ease;
+    }
+    .tone-bar-fill.negative { background: var(--warn); }
+    .tone-bar-fill.neutral  { background: var(--info); }
+    .tone-bar-fill.positive { background: var(--accent); }
+    .tone-pct {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      min-width: 30px;
+      text-align: right;
+    }
+
+    /* ─── ERROR ──────────────────────────────────────────────────── */
+    .error-box {
+      background: rgba(255,107,53,0.07);
+      border: 1px solid rgba(255,107,53,0.25);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .error-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .error-msg  { font-size: 12.5px; color: var(--warn); line-height: 1.5; }
+
+    /* ─── FOOTER ─────────────────────────────────────────────────── */
+    .footer {
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .footer-meta {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-faint);
+    }
+    .retry-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: var(--radius);
+      padding: 4px 10px;
+      font-family: var(--mono);
+      font-size: 10px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .retry-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ── HEADER ─────────────────────────────────────────────── -->
+  <div class="header">
+    <div class="header-icon">⚡</div>
+    <div class="header-text">
+      <div class="header-title">AI Enrichment</div>
+      <div class="header-sub" id="header-sub">Ready to analyse</div>
+    </div>
+    <button class="analyse-btn" id="analyse-btn" onclick="analyseEmail()">
+      Analyse
+    </button>
+  </div>
+
+  <!-- ── STATE: IDLE ────────────────────────────────────────── -->
+  <div id="state-idle">
+    <div class="idle-prompt">
+      <div class="big-icon">📬</div>
+      <h3>Email loaded</h3>
+      <p>Click <strong>Analyse</strong> to get an AI-powered breakdown of this email.</p>
+    </div>
+  </div>
+
+  <!-- ── STATE: LOADING ─────────────────────────────────────── -->
+  <div id="state-loading">
+    <div class="loading-label">
+      <div class="spinner"></div>
+      <span id="loading-msg">Sending to AI…</span>
+    </div>
+    <div class="skeleton skeleton-tall"></div>
+    <div class="skeleton skeleton-medium"></div>
+    <div class="skeleton skeleton-short"></div>
+    <div class="skeleton skeleton-medium"></div>
+  </div>
+
+  <!-- ── STATE: ERROR ───────────────────────────────────────── -->
+  <div id="state-error">
+    <div class="error-box">
+      <div class="error-icon">⚠️</div>
+      <div class="error-msg" id="error-msg">Something went wrong. Please try again.</div>
+    </div>
+    <button class="retry-btn" onclick="analyseEmail()" style="align-self:flex-start; margin-top:4px; padding: 6px 14px; font-size: 11px;">
+      ↻ Retry
+    </button>
+  </div>
+
+  <!-- ── STATE: RESULT ──────────────────────────────────────── -->
+  <div id="state-result">
+
+    <!-- Summary -->
+    <div class="card">
+      <div class="card-header">
+        <span>📋</span>
+        <span class="card-label">Summary</span>
+      </div>
+      <div class="card-body" id="res-summary">—</div>
+    </div>
+
+    <!-- Category + Urgency chips -->
+    <div class="card">
+      <div class="card-header">
+        <span>🏷️</span>
+        <span class="card-label">Classification</span>
+      </div>
+      <div class="card-body">
+        <div class="chips" id="res-chips"></div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="card" id="card-actions">
+      <div class="card-header">
+        <span>✅</span>
+        <span class="card-label">Suggested Actions</span>
+      </div>
+      <div class="card-body" id="res-actions"></div>
+    </div>
+
+    <!-- Tone -->
+    <div class="card" id="card-tone">
+      <div class="card-header">
+        <span>📊</span>
+        <span class="card-label">Tone Analysis</span>
+      </div>
+      <div class="card-body" id="res-tone"></div>
+    </div>
+
+  </div>
+
+  <!-- ── FOOTER ──────────────────────────────────────────────── -->
+  <div class="footer">
+    <span class="footer-meta" id="footer-meta">—</span>
+    <button class="retry-btn" id="retry-btn" onclick="analyseEmail()" style="display:none">↻ Re-analyse</button>
+  </div>
+
+</div>
+
+<script src="taskpane.js"></script>
+</body>
+</html>
