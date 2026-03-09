@@ -9,7 +9,7 @@
 
 // ── CONFIG ─────────────────────────────────────────────────────────────────
 // Power Automate HTTP trigger URL
-const API_URL = "https://aaf6fc63688befc681b7fe7060a9c8.54.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/587ac7f7b0bd4b64a7f63c7ff53e26ca/triggers/manual/paths/invoke?api-version=1";
+const API_URL = "https://aaf6fc63688befc681b7fe7060a9c8.54.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/587ac7f7b0bd4b64a7f63c7ff53e26ca/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=A5FzK-Inv6fca78TB2hblTN8ciSCLFVnxrUK7FxukYI";
 // ───────────────────────────────────────────────────────────────────────────
 
 let _emailData = null;   // cache the current email once read
