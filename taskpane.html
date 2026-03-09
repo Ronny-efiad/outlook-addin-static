@@ -405,42 +405,38 @@
   <!-- ── STATE: RESULT ──────────────────────────────────────── -->
   <div id="state-result">
 
-    <!-- Summary -->
+    <!-- Product Name -->
     <div class="card">
       <div class="card-header">
-        <span>📋</span>
-        <span class="card-label">Summary</span>
-      </div>
-      <div class="card-body" id="res-summary">—</div>
-    </div>
-
-    <!-- Category + Urgency chips -->
-    <div class="card">
-      <div class="card-header">
-        <span>🏷️</span>
-        <span class="card-label">Classification</span>
+        <span>📦</span>
+        <span class="card-label">Product Match</span>
       </div>
       <div class="card-body">
-        <div class="chips" id="res-chips"></div>
+        <div style="font-size: 16px; font-weight: 500; margin-bottom: 4px;" id="res-product-name">—</div>
+        <div style="font-family: var(--mono); font-size: 11px; color: var(--text-muted);">
+          Product # <span id="res-product-number" style="color: var(--accent);">—</span>
+        </div>
       </div>
     </div>
 
-    <!-- Actions -->
-    <div class="card" id="card-actions">
+    <!-- Confidence -->
+    <div class="card">
       <div class="card-header">
-        <span>✅</span>
-        <span class="card-label">Suggested Actions</span>
+        <span>🎯</span>
+        <span class="card-label">Confidence</span>
       </div>
-      <div class="card-body" id="res-actions"></div>
+      <div class="card-body">
+        <div class="chips" id="res-confidence"></div>
+      </div>
     </div>
 
-    <!-- Tone -->
-    <div class="card" id="card-tone">
+    <!-- Reasoning -->
+    <div class="card">
       <div class="card-header">
-        <span>📊</span>
-        <span class="card-label">Tone Analysis</span>
+        <span>💡</span>
+        <span class="card-label">Reasoning</span>
       </div>
-      <div class="card-body" id="res-tone"></div>
+      <div class="card-body" id="res-reasoning">—</div>
     </div>
 
   </div>

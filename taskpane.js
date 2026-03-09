@@ -4,12 +4,12 @@
  *
  * FLOW:
  *   Office.onReady → read email metadata
- *   analyseEmail()  → POST to /api/analyse → render result cards
+ *   analyseEmail()  → POST to Power Automate → render product match
  */
 
 // ── CONFIG ─────────────────────────────────────────────────────────────────
-// Replace with the URL of your deployed backend (Azure Function, Express, etc.)
-const API_URL = "https://devious-postmedian-makai.ngrok-free.dev/api/analyse";
+// Power Automate HTTP trigger URL
+const API_URL = "https://aaf6fc63688befc681b7fe7060a9c8.54.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/587ac7f7b0bd4b64a7f63c7ff53e26ca/triggers/manual/paths/invoke?api-version=1";
 // ───────────────────────────────────────────────────────────────────────────
 
 let _emailData = null;   // cache the current email once read
@@ -44,7 +44,6 @@ function readCurrentEmail() {
       return reject(new Error("No email item found."));
     }
 
-    // 1. Get the full body (HTML or text)
     item.body.getAsync(Office.CoercionType.Text, { asyncContext: "body" }, (bodyResult) => {
       if (bodyResult.status !== Office.AsyncResultStatus.Succeeded) {
         return reject(new Error("Could not read email body: " + bodyResult.error.message));
@@ -52,7 +51,6 @@ function readCurrentEmail() {
 
       const body = bodyResult.value;
 
-      // 2. Collect synchronous fields
       const data = {
         subject:      item.subject            || "(no subject)",
         senderName:   item.from?.displayName  || "Unknown",
@@ -61,7 +59,6 @@ function readCurrentEmail() {
                         ? new Date(item.dateTimeCreated).toISOString()
                         : new Date().toISOString(),
         bodyText:     body.trim(),
-        // Trim for API call — first 4000 chars is more than enough for analysis
         bodyTrimmed:  body.trim().slice(0, 4000),
       };
 
@@ -85,26 +82,24 @@ async function analyseEmail() {
     return;
   }
 
-  // Call backend
+  // Call Power Automate flow
   try {
-    setLoadingMsg("Analysing with AI…");
+    setLoadingMsg("Analysing with AI Builder…");
     _startTime = Date.now();
 
     const response = await fetch(API_URL, {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        subject:      _emailData.subject,
-        senderName:   _emailData.senderName,
-        senderEmail:  _emailData.senderEmail,
-        dateReceived: _emailData.dateReceived,
-        bodyText:     _emailData.bodyTrimmed,
+        subject: _emailData.subject,
+        body:    _emailData.bodyTrimmed,
+        sender:  `${_emailData.senderName} <${_emailData.senderEmail}>`,
       }),
     });
 
     if (!response.ok) {
       const errText = await response.text().catch(() => response.statusText);
-      throw new Error(`Backend error ${response.status}: ${errText}`);
+      throw new Error(`Power Automate error ${response.status}: ${errText}`);
     }
 
     const result = await response.json();
@@ -114,7 +109,7 @@ async function analyseEmail() {
 
   } catch (err) {
     console.error("AI analysis failed:", err);
-    showError(err.message || "Network error — check the backend is running.");
+    showError(err.message || "Network error — check the Power Automate flow.");
   } finally {
     btn.disabled = false;
   }
@@ -122,80 +117,115 @@ async function analyseEmail() {
 
 // ── RENDER RESULT ──────────────────────────────────────────────────────────
 /**
- * Expected result shape from backend:
+ * Expected result shape from Power Automate / AI Builder:
  * {
- *   summary:   string,
- *   category:  string,           // e.g. "COMPLAINT", "INQUIRY", "REQUEST", "INFO"
- *   urgency:   string,           // "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"
- *   actions:   string[],         // 1–3 short action strings
- *   tone: {
- *     negative: number,          // 0–100
- *     neutral:  number,
- *     positive: number,
- *   }
+ *   productNumber: string,
+ *   productName:   string,
+ *   confidence:    "HIGH" | "MEDIUM" | "LOW",
+ *   reasoning:     string
  * }
+ *
+ * The AI Builder response might be nested or wrapped in a text field,
+ * so we try to extract the JSON from various formats.
  */
-function renderResult(r, elapsed) {
-  // Summary
-  setText("res-summary", r.summary || "No summary available.");
+function renderResult(raw, elapsed) {
+  // Try to extract the product match JSON from the response
+  let r = extractProductMatch(raw);
 
-  // Chips (category + urgency)
-  const chipsEl = document.getElementById("res-chips");
-  chipsEl.innerHTML = "";
-  [r.category, r.urgency].filter(Boolean).forEach((label) => {
+  if (!r) {
+    showError("Could not parse AI Builder response. Check the flow output.");
+    console.error("Raw response:", raw);
+    return;
+  }
+
+  // Product Name
+  setText("res-product-name", r.productName || "Unknown");
+
+  // Product Number
+  setText("res-product-number", r.productNumber || "UNKNOWN");
+
+  // Confidence badge
+  const confidenceEl = document.getElementById("res-confidence");
+  confidenceEl.innerHTML = "";
+  if (r.confidence) {
     const chip = document.createElement("span");
-    const key  = label.toUpperCase().replace(/\s+/g, "_");
+    const key = r.confidence.toUpperCase();
     chip.className = `badge badge-${key}`;
-    chip.innerHTML = `<span class="badge-dot"></span>${label}`;
-    chipsEl.appendChild(chip);
-  });
-
-  // Actions
-  const actionsEl = document.getElementById("res-actions");
-  actionsEl.innerHTML = "";
-  const actions = r.actions || [];
-  if (actions.length === 0) {
-    actionsEl.textContent = "No specific actions suggested.";
-  } else {
-    actions.forEach((action, i) => {
-      actionsEl.innerHTML += `
-        <div class="action-item">
-          <span class="action-num">${String(i + 1).padStart(2, "0")}</span>
-          <span class="action-text">${escapeHtml(action)}</span>
-        </div>`;
-    });
+    chip.innerHTML = `<span class="badge-dot"></span>${r.confidence}`;
+    confidenceEl.appendChild(chip);
   }
 
-  // Tone bars
-  const toneEl = document.getElementById("res-tone");
-  toneEl.innerHTML = "";
-  if (r.tone) {
-    const tones = [
-      { label: "Negative", key: "negative", cls: "negative" },
-      { label: "Neutral",  key: "neutral",  cls: "neutral"  },
-      { label: "Positive", key: "positive", cls: "positive" },
-    ];
-    tones.forEach(({ label, key, cls }) => {
-      const pct = Math.round(r.tone[key] || 0);
-      toneEl.innerHTML += `
-        <div class="tone-row" style="margin-bottom:8px">
-          <span class="tone-label">${label}</span>
-          <div class="tone-bar-track">
-            <div class="tone-bar-fill ${cls}" style="width:${pct}%"></div>
-          </div>
-          <span class="tone-pct">${pct}%</span>
-        </div>`;
-    });
-  } else {
-    toneEl.textContent = "Tone data unavailable.";
-  }
+  // Reasoning
+  setText("res-reasoning", r.reasoning || "No reasoning provided.");
 
   // Footer
   setFooterMeta(`Analysed in ${elapsed}s · ${_emailData.senderEmail}`);
   document.getElementById("retry-btn").style.display = "block";
-  setHeaderSub("Analysis complete");
+  setHeaderSub("Product match found");
 
   showState("result");
+}
+
+/**
+ * Extract product match JSON from various AI Builder response formats.
+ * The response might be:
+ *   - Direct JSON object with the fields
+ *   - Nested under a "text" or "body" property
+ *   - A string containing JSON that needs parsing
+ */
+function extractProductMatch(raw) {
+  // If it already has productNumber, use it directly
+  if (raw && raw.productNumber) return raw;
+
+  // Check common wrapper fields
+  const wrapperKeys = ["text", "body", "result", "output", "predictionOutput", "responsev2"];
+  for (const key of wrapperKeys) {
+    if (raw && raw[key]) {
+      const inner = raw[key];
+      // If it's a string, try to parse as JSON
+      if (typeof inner === "string") {
+        const parsed = tryParseJSON(inner);
+        if (parsed && parsed.productNumber) return parsed;
+      }
+      // If it's an object with productNumber
+      if (typeof inner === "object" && inner.productNumber) return inner;
+    }
+  }
+
+  // Try to find JSON in any string value in the response
+  if (raw && typeof raw === "object") {
+    for (const val of Object.values(raw)) {
+      if (typeof val === "string") {
+        const parsed = tryParseJSON(val);
+        if (parsed && parsed.productNumber) return parsed;
+        // Try extracting {...} from the string
+        const match = val.match(/\{[\s\S]*?"productNumber"[\s\S]*?\}/);
+        if (match) {
+          const extracted = tryParseJSON(match[0]);
+          if (extracted) return extracted;
+        }
+      }
+    }
+  }
+
+  // If raw is a string itself
+  if (typeof raw === "string") {
+    const parsed = tryParseJSON(raw);
+    if (parsed && parsed.productNumber) return parsed;
+  }
+
+  return null;
+}
+
+function tryParseJSON(str) {
+  try {
+    return JSON.parse(str);
+  } catch (_) {
+    // Try stripping markdown code fences
+    const stripped = str.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    try { return JSON.parse(stripped); } catch (_) {}
+    return null;
+  }
 }
 
 // ── UI HELPERS ─────────────────────────────────────────────────────────────
