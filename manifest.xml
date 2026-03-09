@@ -22,6 +22,15 @@
     <AppDomain>https://devious-postmedian-makai.ngrok-free.dev</AppDomain>
   </AppDomains>
 
+  <FormSettings>
+    <Form xsi:type="ItemRead">
+      <DesktopSettings>
+        <SourceLocation DefaultValue="https://ronny-efiad.github.io/outlook-addin-static/taskpane.html"/>
+        <RequestedHeight>250</RequestedHeight>
+      </DesktopSettings>
+    </Form>
+  </FormSettings>
+
   <Permissions>ReadItem</Permissions>
 
   <Rule xsi:type="RuleCollection" Mode="Or">
