@@ -15,7 +15,7 @@
 
   <IconUrl DefaultValue="https://ronny-efiad.github.io/outlook-addin-static/assets/icon-32.png"/>
   <HighResolutionIconUrl DefaultValue="https://ronny-efiad.github.io/outlook-addin-static/assets/icon-80.png"/>
-  <SupportUrl DefaultValue="https://ronny-efiad.github.io/outlook-addin-static/support"/>
+  <SupportUrl DefaultValue="https://ronny-efiad.github.io/outlook-addin-static/support.html"/>
 
   <AppDomains>
     <AppDomain>https://ronny-efiad.github.io</AppDomain>
