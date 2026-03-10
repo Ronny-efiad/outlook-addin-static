@@ -136,9 +136,18 @@ function renderResult(raw, elapsed) {
     return;
   }
 
+  // Customer card
+  const hasCustomer = r.customerName || r.customerNumber;
+  document.getElementById("card-customer").style.display = hasCustomer ? "block" : "none";
+  setText("res-customer-name",   r.customerName   || "—");
+  setText("res-customer-number", r.customerNumber || "—");
+  setText("res-domain",          r.domain         || "—");
+
+  // Product
   setText("res-product-name",   r.productName   || "Unknown");
   setText("res-product-number", r.productNumber || "UNKNOWN");
 
+  // Confidence badge
   const confidenceEl = document.getElementById("res-confidence");
   confidenceEl.innerHTML = "";
   if (r.confidence) {
@@ -153,7 +162,7 @@ function renderResult(raw, elapsed) {
 
   setFooterMeta(`Analysed in ${elapsed}s · ${_emailData.senderEmail}`);
   document.getElementById("retry-btn").style.display = "block";
-  setHeaderSub("Product match found");
+  setHeaderSub(r.customerName || "Product match found");
 
   showState("result");
 }

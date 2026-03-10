@@ -405,14 +405,29 @@
   <!-- ── STATE: RESULT ──────────────────────────────────────── -->
   <div id="state-result">
 
-    <!-- Product Name -->
+    <!-- Customer -->
+    <div class="card" id="card-customer">
+      <div class="card-header">
+        <span>🏢</span>
+        <span class="card-label">Customer</span>
+      </div>
+      <div class="card-body">
+        <div style="font-size: 14px; font-weight: 500; margin-bottom: 4px;" id="res-customer-name">—</div>
+        <div style="font-family: var(--mono); font-size: 11px; color: var(--text-muted);">
+          # <span id="res-customer-number" style="color: var(--accent);">—</span>
+          &nbsp;·&nbsp; <span id="res-domain">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Product -->
     <div class="card">
       <div class="card-header">
         <span>📦</span>
         <span class="card-label">Product Match</span>
       </div>
       <div class="card-body">
-        <div style="font-size: 16px; font-weight: 500; margin-bottom: 4px;" id="res-product-name">—</div>
+        <div style="font-size: 14px; font-weight: 500; margin-bottom: 4px;" id="res-product-name">—</div>
         <div style="font-family: var(--mono); font-size: 11px; color: var(--text-muted);">
           Product # <span id="res-product-number" style="color: var(--accent);">—</span>
         </div>
