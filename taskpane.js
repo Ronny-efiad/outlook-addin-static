@@ -159,30 +159,29 @@ function renderResult(raw, elapsed) {
 }
 
 function extractProductMatch(raw) {
+  // Direct match
   if (raw && raw.productNumber) return raw;
 
-  const wrapperKeys = ["text", "body", "result", "output", "predictionOutput", "responsev2"];
-  for (const key of wrapperKeys) {
-    if (raw && raw[key]) {
-      const inner = raw[key];
-      if (typeof inner === "string") {
-        const parsed = tryParseJSON(inner);
-        if (parsed && parsed.productNumber) return parsed;
-      }
-      if (typeof inner === "object" && inner.productNumber) return inner;
+  // Power Automate / AI Builder nested path:
+  // responsev2 → predictionOutput → text (JSON string)
+  try {
+    const text = raw?.responsev2?.predictionOutput?.text;
+    if (text) {
+      const parsed = tryParseJSON(text);
+      if (parsed && parsed.productNumber) return parsed;
     }
-  }
+  } catch (_) {}
 
+  // Generic deep search through all string values
   if (raw && typeof raw === "object") {
     for (const val of Object.values(raw)) {
       if (typeof val === "string") {
         const parsed = tryParseJSON(val);
         if (parsed && parsed.productNumber) return parsed;
-        const match = val.match(/\{[\s\S]*?"productNumber"[\s\S]*?\}/);
-        if (match) {
-          const extracted = tryParseJSON(match[0]);
-          if (extracted) return extracted;
-        }
+      }
+      if (typeof val === "object" && val !== null) {
+        const nested = extractProductMatch(val);
+        if (nested) return nested;
       }
     }
   }
