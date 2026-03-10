@@ -13,19 +13,19 @@
     @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
 
     :root {
-      --bg:          #0d0f12;
-      --surface:     #161920;
-      --surface2:    #1e2229;
-      --border:      #2a2f3a;
-      --accent:      #00d4aa;
-      --accent-dim:  rgba(0, 212, 170, 0.12);
-      --warn:        #ff6b35;
-      --warn-dim:    rgba(255, 107, 53, 0.12);
-      --info:        #4d9de0;
-      --info-dim:    rgba(77, 157, 224, 0.12);
-      --text:        #e8eaf0;
-      --text-muted:  #6b7280;
-      --text-faint:  #3d4452;
+      --bg:          #ffffff;
+      --surface:     #f4f6f8;
+      --surface2:    #eaecef;
+      --border:      #d8dce2;
+      --accent:      #00a882;
+      --accent-dim:  rgba(0, 168, 130, 0.10);
+      --warn:        #e05a20;
+      --warn-dim:    rgba(224, 90, 32, 0.10);
+      --info:        #2b7ec4;
+      --info-dim:    rgba(43, 126, 196, 0.10);
+      --text:        #111318;
+      --text-muted:  #52596b;
+      --text-faint:  #b0b7c3;
       --mono:        'IBM Plex Mono', monospace;
       --sans:        'IBM Plex Sans', sans-serif;
       --radius:      6px;
@@ -67,7 +67,7 @@
       object-fit: contain;
       flex-shrink: 0;
       border-radius: var(--radius);
-      background: #fff;
+      background: var(--surface);
       padding: 3px;
     }
     .header-text { flex: 1; }
@@ -198,12 +198,12 @@
       border-bottom: 1px solid var(--border);
     }
     .card-label {
-      font-family: var(--mono);
-      font-size: 10px;
-      font-weight: 500;
-      letter-spacing: 0.1em;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
       text-transform: uppercase;
-      color: var(--text-muted);
+      color: var(--text);
       flex: 1;
     }
     .card-body {
@@ -408,7 +408,6 @@
     <!-- Customer -->
     <div class="card" id="card-customer">
       <div class="card-header">
-        <span>🏢</span>
         <span class="card-label">Customer</span>
       </div>
       <div class="card-body">
@@ -423,7 +422,6 @@
     <!-- Product -->
     <div class="card">
       <div class="card-header">
-        <span>📦</span>
         <span class="card-label">Product Match</span>
       </div>
       <div class="card-body">
@@ -437,7 +435,6 @@
     <!-- Confidence -->
     <div class="card">
       <div class="card-header">
-        <span>🎯</span>
         <span class="card-label">Confidence</span>
       </div>
       <div class="card-body">
