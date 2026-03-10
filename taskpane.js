@@ -119,34 +119,26 @@ async function analyseEmail() {
 
 // ── RENDER RESULT ──────────────────────────────────────────────────────────
 /**
- * Expected result shape from Power Automate / AI Builder:
+ * Expected result shape:
  * {
  *   productNumber: string,
  *   productName:   string,
  *   confidence:    "HIGH" | "MEDIUM" | "LOW",
  *   reasoning:     string
  * }
- *
- * The AI Builder response might be nested or wrapped in a text field,
- * so we try to extract the JSON from various formats.
  */
 function renderResult(raw, elapsed) {
-  // Try to extract the product match JSON from the response
   let r = extractProductMatch(raw);
 
   if (!r) {
-    showError("Could not parse AI Builder response. Check the flow output.");
+    showError("Could not parse AI response. Check the flow output.");
     console.error("Raw response:", raw);
     return;
   }
 
-  // Product Name
-  setText("res-product-name", r.productName || "Unknown");
-
-  // Product Number
+  setText("res-product-name",   r.productName   || "Unknown");
   setText("res-product-number", r.productNumber || "UNKNOWN");
 
-  // Confidence badge
   const confidenceEl = document.getElementById("res-confidence");
   confidenceEl.innerHTML = "";
   if (r.confidence) {
@@ -157,10 +149,8 @@ function renderResult(raw, elapsed) {
     confidenceEl.appendChild(chip);
   }
 
-  // Reasoning
   setText("res-reasoning", r.reasoning || "No reasoning provided.");
 
-  // Footer
   setFooterMeta(`Analysed in ${elapsed}s · ${_emailData.senderEmail}`);
   document.getElementById("retry-btn").style.display = "block";
   setHeaderSub("Product match found");
@@ -168,39 +158,26 @@ function renderResult(raw, elapsed) {
   showState("result");
 }
 
-/**
- * Extract product match JSON from various AI Builder response formats.
- * The response might be:
- *   - Direct JSON object with the fields
- *   - Nested under a "text" or "body" property
- *   - A string containing JSON that needs parsing
- */
 function extractProductMatch(raw) {
-  // If it already has productNumber, use it directly
   if (raw && raw.productNumber) return raw;
 
-  // Check common wrapper fields
   const wrapperKeys = ["text", "body", "result", "output", "predictionOutput", "responsev2"];
   for (const key of wrapperKeys) {
     if (raw && raw[key]) {
       const inner = raw[key];
-      // If it's a string, try to parse as JSON
       if (typeof inner === "string") {
         const parsed = tryParseJSON(inner);
         if (parsed && parsed.productNumber) return parsed;
       }
-      // If it's an object with productNumber
       if (typeof inner === "object" && inner.productNumber) return inner;
     }
   }
 
-  // Try to find JSON in any string value in the response
   if (raw && typeof raw === "object") {
     for (const val of Object.values(raw)) {
       if (typeof val === "string") {
         const parsed = tryParseJSON(val);
         if (parsed && parsed.productNumber) return parsed;
-        // Try extracting {...} from the string
         const match = val.match(/\{[\s\S]*?"productNumber"[\s\S]*?\}/);
         if (match) {
           const extracted = tryParseJSON(match[0]);
@@ -210,7 +187,6 @@ function extractProductMatch(raw) {
     }
   }
 
-  // If raw is a string itself
   if (typeof raw === "string") {
     const parsed = tryParseJSON(raw);
     if (parsed && parsed.productNumber) return parsed;
@@ -220,14 +196,10 @@ function extractProductMatch(raw) {
 }
 
 function tryParseJSON(str) {
-  try {
-    return JSON.parse(str);
-  } catch (_) {
-    // Try stripping markdown code fences
-    const stripped = str.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-    try { return JSON.parse(stripped); } catch (_) {}
-    return null;
-  }
+  try { return JSON.parse(str); } catch (_) {}
+  const stripped = str.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  try { return JSON.parse(stripped); } catch (_) {}
+  return null;
 }
 
 // ── UI HELPERS ─────────────────────────────────────────────────────────────
